@@ -1,7 +1,16 @@
-import Redis from "ioredis";
+import { Cluster } from "ioredis";
+import dotenv from "dotenv";
 
-const listener = new Redis();
-const publisher = new Redis();
+dotenv.config();
+
+if (!process.env.nodes) throw new Error();
+const nodes = process.env.nodes.split(",").map((node) => {
+  const [host, port] = node.split(":");
+  return { host, port: parseInt(port) || 6379 };
+});
+
+const listener = new Cluster(nodes);
+const publisher = new Cluster(nodes);
 
 function format([_id, fields]) {
   const entries: any[] = [];

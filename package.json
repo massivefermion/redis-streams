@@ -1,6 +1,7 @@
 {
   "name": "redis-streams",
   "dependencies": {
+    "dotenv": "^16.0.3",
     "fastify": "^4.10.2",
     "ioredis": "^5.2.4",
     "uuid": "^9.0.0"

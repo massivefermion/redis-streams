@@ -1,7 +1,19 @@
-import Redis from "ioredis";
+import { Cluster } from "ioredis";
+import dotenv from "dotenv";
 
-const listener = new Redis();
-const publisher = new Redis();
+dotenv.config();
+
+if (!process.env.nodes) throw new Error();
+const nodes = process.env.nodes.split(",").map((node) => {
+  const [host, port] = node.split(":");
+  return { host, port: parseInt(port) || 6379 };
+});
+
+const listener = new Cluster(nodes);
+const sender = new Cluster(nodes);
+
+const publisher = new Cluster(nodes);
+export const subscriber = new Cluster(nodes);
 
 function format_message(key, [_id, fields]) {
   const entries: any[] = [];
@@ -16,6 +28,8 @@ export async function init(keys: string[]) {
     try {
       await listener.xgroup("CREATE", key, "cg", "$", "MKSTREAM");
     } catch {}
+
+  await subscriber.subscribe("misfits");
 }
 
 export async function* listen(
@@ -54,8 +68,8 @@ export async function* listen(
   }
 }
 
-export async function publish(jobId, op, left, right) {
-  await publisher.xadd(
+export async function sendOp(jobId, op, left, right) {
+  await sender.xadd(
     "jobs",
     "*",
     "jobId",
@@ -67,4 +81,14 @@ export async function publish(jobId, op, left, right) {
     "right",
     right
   );
+}
+
+export async function publish(msg) {
+  await publisher.publish("misfits", JSON.stringify(msg));
+}
+
+export function receive(subscriber) {
+  return new Promise((resolve) => {
+    subscriber.on("message", (...args) => resolve(args));
+  });
 }
