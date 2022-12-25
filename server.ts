@@ -1,6 +1,6 @@
+import { randomUUID } from "crypto";
 import Fastify from "fastify";
-import { v4 as uuid } from "uuid";
-import { init, listen, sendOp, publish, subscriber, receive } from "./hub";
+import { init, listen, sendOp } from "./hub";
 
 const fastify = Fastify({ logger: false });
 
@@ -24,7 +24,7 @@ fastify.get("/", async () => {
   const op = ops[Math.floor(Math.random() * ops.length)];
   const left = Math.random() * 1024;
   const right = Math.random() * 1024;
-  const jobId = uuid();
+  const jobId = randomUUID();
   await sendOp(jobId, op, left, right);
   const { result } = await listenForId(jobId);
   return { result };
